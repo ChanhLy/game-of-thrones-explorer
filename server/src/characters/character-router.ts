@@ -10,35 +10,45 @@ characterRouter.get("/characters/:id", async (req, res) => {
   const { id } = req.params;
 
   if (isNaN(Number(id))) {
-    res.sendStatus(HttpStatusCode.BadRequest);
+    res.status(HttpStatusCode.BadRequest).send({ message: "Invalid Id, must be a string" });
   }
 
   const response = await characterService.getCharacterById(Number(id)).catch((error) => {
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.log(error.response.data);
-      console.log(error.response.status);
-      console.log(error.response.headers);
-
-      // this also stop the controller so we don't need to return
-      res.status(error.response.status).send(error.response.data);
+      console.log(`Error: characterService.getCharacterById ${error.response.status} ${error.response.data}`);
+      res.status(404).send(`The character with ID ${id} is not found`);
     }
   });
 
-  if (!response?.data) {
+  if (!response) {
+    return;
+  }
+
+  if (!response.data) {
     res.sendStatus(500);
     return;
   }
+
   res.send(response.data);
 });
 
 characterRouter.get("/characters", async (req, res) => {
-  const response = await characterService.getCharacters();
+  const response = await characterService.getCharacters().catch((error) => {
+    if (error.response) {
+      console.log(`Error: characterService.getCharacters ${error.response.status} ${error.response.data}`);
+      res.status(500).send({ message: "Somethings wrong, please try again later" });
+    }
+  });
+
+  if (!response) {
+    return;
+  }
 
   if (!response.data) {
-    res.sendStatus(500);
+    res.status(500).send({ message: "Somethings wrong, please try again later" });
+    return;
   }
+
   res.send(response.data);
 });
 
